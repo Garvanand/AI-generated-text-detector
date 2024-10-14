@@ -25,5 +25,64 @@ The AI-Generated Text Detector is a machine-learning model designed to detect an
 - `sklearn`: Machine learning model evaluation and performance metrics calculation.
 - `seaborn`, `matplotlib`: For data visualization and result interpretation.
 
+**Helping a Web Developer Integrate the Model**
+
+**1. Model Deployment as a Web Service**
+The deployment process involves the following steps:
+
+Save the Trained Model: First, save the trained AI-generated text Detector model and any associated preprocessing tools (e.g., tokenizer, vectorizer).
+Set Up a Flask API: Flask will create a lightweight web server that serves the model predictions.
+Expose Endpoints: We will expose a /predict endpoint that accepts text input via POST requests.
+Integrate into Frontend: The web project's front end can call the Flask API to classify text in real time.
+
+**2. Flask API Implementation**
+
+3.1. Install Flask and Required Libraries
+Make sure Flask and the required dependencies are installed:
+**pip install flask tensorflow pandas nltk**
+
+3.2. Flask API Code Example
+Below is a complete Flask API implementation for deploying the AI-Generated Text Detector model:
 
 
+    from flask import Flask, request, jsonify
+    import pickle
+    import tensorflow as tf
+    from tensorflow.keras.models import load_model
+    import nltk
+    from nltk.tokenize import word_tokenize
+    
+    model = load_model('ai_text_detector_model.h5')
+    with open('tokenizer.pkl', 'rb') as f:
+        tokenizer = pickle.load(f)
+
+    app = Flask(__name__)
+
+    def preprocess_text(text):
+    tokens = word_tokenize(text.lower())
+    
+    text_sequence = tokenizer.texts_to_sequences([tokens])
+    
+    text_sequence_padded = tf.keras.preprocessing.sequence.pad_sequences(text_sequence, maxlen=100)
+    
+    return text_sequence_padded
+
+    @app.route('/predict', methods=['POST'])
+    def predict():
+        data = request.get_json()
+        
+    if 'text' not in data:
+        return jsonify({'error': 'No text provided'}), 400
+    
+    processed_text = preprocess_text(data['text'])
+    
+    prediction = model.predict(processed_text)
+    
+    prediction_label = int(prediction[0] > 0.5)  # Assuming binary classification (0 for human, 1 for AI)
+    
+    result = 'AI-generated' if prediction_label == 1 else 'Human-generated'
+    
+    return jsonify({'prediction': result})
+
+    if __name__ == '__main__':
+    app.run(debug=True)
